@@ -1,0 +1,25 @@
+{
+  "name": "mongo-authorize",
+  "version": "0.0.0",
+  "description": "Rules base authorization with mongoose and express",
+  "main": "index.js",
+  "scripts": {
+    "test": "sh run_tests.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gmanvn/mongo-authorize.git"
+  },
+  "keywords": [
+    "mongo",
+    "mongoose",
+    "authorization",
+    "authorize"
+  ],
+  "author": "Tung Vu <me@tungv.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/gmanvn/mongo-authorize/issues"
+  },
+  "homepage": "https://github.com/gmanvn/mongo-authorize"
+}
