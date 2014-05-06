@@ -1,0 +1,4 @@
+meta:
+  resource: item
+rules:
+  query: user.gender is this.gender

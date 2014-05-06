@@ -1,0 +1,6 @@
+meta:
+  resource: item
+  language: javascript
+
+rules:
+  insert: user.gender == this.gender

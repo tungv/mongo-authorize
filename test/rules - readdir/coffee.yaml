@@ -1,0 +1,6 @@
+meta:
+  resource: item
+  language: coffee
+
+rules:
+  query: user.gender is this.gender
