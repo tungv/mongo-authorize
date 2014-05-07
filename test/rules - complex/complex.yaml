@@ -1,4 +1,0 @@
-meta:
-  resource: item
-rules:
-  query: user.age <= @age and user.gender is @gender

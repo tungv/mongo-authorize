@@ -16,7 +16,7 @@ class Authorizr
 
   @replaceMatched = replace = (rule, context)->
     matched = pattern rule
-    matched.forEach (match)->
+    matched?.forEach (match)->
       getter = new Function ['context'], "return context.#{match}"
       try
         value = getter(context)
@@ -30,19 +30,20 @@ class Authorizr
 
   constructor: (config)->
     @rules = {}
-    @rulesRoot = config?.rulesRoot or process.cwd() + '/rules'
-    @readDir()
+    @rulesRoot = config?.rulesRoot
+    @readDir() if @rulesRoot
 
   readYaml: (path)->
     fullPath = @rulesRoot + '/' + path
-    data = yaml.safeLoad fs.readFileSync(fullPath, 'utf8')
+    yaml.safeLoad fs.readFileSync(fullPath, 'utf8')
 
-    name = data?.meta?.resource
+  applyRules: (content)->
+    name = content?.meta?.resource
     throw new errors.InvalidFileError path, 'missing meta.resource' unless name?
 
-    language = data.meta.language or 'coffee'
+    language = content.meta.language or 'coffee'
 
-    rules = data.rules
+    rules = content.rules
 
     unless language is 'javascript'
       compiler =  require "./compilers/#{language}.coffee"
@@ -52,12 +53,15 @@ class Authorizr
     #logger.debug 'rules', rules
     @rules[name] = _.extend {}, @rules[name], rules
 
+
   readDir: ->
     files = fs.readdirSync @rulesRoot
-    @readYaml file for file in files
+    @applyRules @readYaml file for file in files
 
   query: (resource, context)->
     rule = @rules[resource]['query']
+
+    #console.log 'rule', "[" + rule + "]"
 
     rule = replace rule, context
     return Model.find() unless rule

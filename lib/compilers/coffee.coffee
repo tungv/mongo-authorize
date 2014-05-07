@@ -4,7 +4,7 @@ exports.compile = compile = (rules, output={})->
   #console.log 'coffee.compile'
   if typeof rules is 'string'
     try
-      jsCode = coffee.compile rules, {bare:true}
+      jsCode = coffee.compile 'return ' + rules, {bare:true}
 
       return jsCode.split('\n').join('')
     catch ex

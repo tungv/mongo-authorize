@@ -70,9 +70,16 @@ describe 'Authorizr', ->
       user:
         gender: 'male'
         age: 25
+        eyeColors: ['green', 'blue']
 
     it 'should query items that match rules only', (done)->
-      authorizr = new Authorizr({rulesRoot: __dirname + '/rules'})
+      authorizr = new Authorizr
+      authorizr.applyRules {
+        meta:
+          resource: 'item'
+        rules:
+          query: 'user.gender is this.gender'
+      }
       query = authorizr.query 'item', context
       query.exec (err, items)->
         should.exist items
@@ -80,7 +87,13 @@ describe 'Authorizr', ->
         done()
 
     it 'should query items that match complex rule only', (done)->
-      authorizr = new Authorizr({rulesRoot: __dirname + '/rules - complex'})
+      authorizr = new Authorizr
+      authorizr.applyRules {
+        meta:
+          resource: 'item'
+        rules:
+          query: "user.age <= @age and user.gender is @gender"
+      }
       query = authorizr.query 'item', context
       query.exec (err, items)->
         should.exist items
@@ -89,9 +102,44 @@ describe 'Authorizr', ->
 
     it 'should not throw error on invalid context value', (done)->
       should.not.throw ()->
-        authorizr = new Authorizr({rulesRoot: __dirname + '/rules - error handling'})
+        authorizr = new Authorizr
+        authorizr.applyRules {
+          meta:
+            resource: 'item'
+          rules:
+            query: "user.names.first is 'tung'"
+        }
         query = authorizr.query 'item', context
         query.exec (err, items)->
           should.exist items
           items.length.should.equal 0
           done()
+
+    it 'should handle "in" operator for data', (done)->
+      authorizr = new Authorizr
+      authorizr.applyRules {
+        meta:
+          resource: 'item'
+        rules:
+          query: 'this.eyeColor in ["green", "blue"]'
+      }
+      query = authorizr.query 'item', context
+      query.exec (err, items)->
+        should.exist items
+        items.length.should.equal 12
+        done()
+
+    it 'should handle "in" operator for context', (done)->
+      authorizr = new Authorizr
+      authorizr.applyRules {
+        meta:
+          resource: 'item'
+        rules:
+          query: 'this.eyeColor in user.eyeColors'
+      }
+      query = authorizr.query 'item', context
+      query.exec (err, items)->
+        should.exist items
+        items.length.should.equal 12
+        done()
+
