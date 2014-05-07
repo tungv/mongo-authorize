@@ -58,6 +58,8 @@ class Authorizr
     files = fs.readdirSync @rulesRoot
     @applyRules @readYaml file for file in files
 
+
+
   query: (resource, context)->
     rule = @rules[resource]['query']
 
