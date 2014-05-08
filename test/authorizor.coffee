@@ -80,7 +80,7 @@ describe 'Authorizr', ->
         rules:
           query: 'user.gender is this.gender'
       }
-      query = authorizr.query 'item', context
+      query = authorizr.makeQuery 'item', context
       query.exec (err, items)->
         should.exist items
         items.length.should.equal 9
@@ -94,7 +94,7 @@ describe 'Authorizr', ->
         rules:
           query: "user.age <= @age and user.gender is @gender"
       }
-      query = authorizr.query 'item', context
+      query = authorizr.makeQuery 'item', context
       query.exec (err, items)->
         should.exist items
         items.length.should.equal 7
@@ -109,7 +109,7 @@ describe 'Authorizr', ->
           rules:
             query: "user.names.first is 'tung'"
         }
-        query = authorizr.query 'item', context
+        query = authorizr.makeQuery 'item', context
         query.exec (err, items)->
           should.exist items
           items.length.should.equal 0
@@ -123,7 +123,7 @@ describe 'Authorizr', ->
         rules:
           query: 'this.eyeColor in ["green", "blue"]'
       }
-      query = authorizr.query 'item', context
+      query = authorizr.makeQuery 'item', context
       query.exec (err, items)->
         should.exist items
         items.length.should.equal 12
@@ -137,7 +137,7 @@ describe 'Authorizr', ->
         rules:
           query: 'this.eyeColor in user.eyeColors'
       }
-      query = authorizr.query 'item', context
+      query = authorizr.makeQuery 'item', context
       query.exec (err, items)->
         should.exist items
         items.length.should.equal 12

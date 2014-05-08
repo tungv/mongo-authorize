@@ -60,6 +60,11 @@ class Authorizr
 
 
 
+  makeQuery: (resource, context)->
+    condition = @query resource, context
+    Model = mongoose.model resource
+    Model.find condition
+
   query: (resource, context)->
     rule = @rules[resource]['query']
 
@@ -69,8 +74,6 @@ class Authorizr
     return Model.find() unless rule
 
     #console.log 'rule', "[" + rule + "]"
-
-    Model = mongoose.model resource
-    Model.find $where:rule
+    return $where:rule
 
 module.exports = Authorizr
