@@ -23,6 +23,7 @@
   },
   "homepage": "https://github.com/gmanvn/mongo-authorize",
   "dependencies": {
+    "bson": "^0.2.7",
     "coffee-script": "^1.7.1",
     "lodash": "^2.4.1",
     "log4js": "^0.6.14",

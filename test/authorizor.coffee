@@ -143,3 +143,93 @@ describe 'Authorizr', ->
         items.length.should.equal 12
         done()
 
+  describe '#optimize', ->
+    authorizr = new Authorizr
+    it 'should optimize this.a === "string"', ->
+      actual = authorizr.optimize 'return this.a === "b"'
+      actual.should.eql {
+        a: 'b'
+      }
+
+    it 'should optimize this.a === number', ->
+      actual = authorizr.optimize 'return this.a === 123.45'
+      actual.should.eql {
+        a: 123.45
+      }
+
+    it 'should optimize this.a === {object}', ->
+      actual = authorizr.optimize 'return this.a === {"abc":{"nested":"object"}}'
+      actual.should.eql {
+        a: {
+          abc: {
+            nested: "object"
+          }
+        }
+      }
+
+    it 'should optimize "reversed" === this.a', ->
+      actual = authorizr.optimize 'return "reversed" === this.a;'
+      actual.should.eql {
+        a: "reversed"
+      }
+
+    it 'should optimize "double equal" == this.a', ->
+      actual = authorizr.optimize 'return "double equal" == this.a;'
+      actual.should.eql {
+        a: "double equal"
+      }
+
+    it 'should handle string with space in middle', ->
+      actual = authorizr.optimize 'return "space in the middle" == this.a;'
+      actual.should.eql {
+        a: "space in the middle"
+      }
+
+      actual = authorizr.optimize 'return this.a === "space in the middle";'
+      actual.should.eql {
+        a: "space in the middle"
+      }
+
+    it 'should handle this.* on both sides', ->
+      actual = authorizr.optimize 'return this.a === this.b;'
+      actual.should.eql {
+        $where: 'return this.a === this.b;'
+      }
+
+    it 'should handle no this.* on either side', ->
+      actual = authorizr.optimize 'return "something" === "something else";'
+      actual.should.eql {
+        $where: 'return false;'
+      }
+
+      actual = authorizr.optimize 'return "something" === "something";'
+      actual.should.eql {
+        $where: 'return true;'
+      }
+
+    it 'should handle _id', ->
+      actual = authorizr.optimize 'return this._id === "536c5f55d5fa6ede7d4f8636";'
+      actual.should.eql {
+        _id: "536c5f55d5fa6ede7d4f8636"
+      }
+
+    it 'should handle newline at the end', ->
+      actual = authorizr.optimize 'return "something" === "something";\n\n\n'
+      actual.should.eql {
+        $where: 'return true;'
+      }
+
+    it 'should handle missing semicolon', ->
+      actual = authorizr.optimize 'return "something" === "something"'
+      actual.should.eql {
+        $where: 'return true;'
+      }
+
+    it 'should handle missing semicolon and extra newline', ->
+      actual = authorizr.optimize 'return "something" === "something"\n\n'
+      actual.should.eql {
+        $where: 'return true;'
+      }
+
+
+
