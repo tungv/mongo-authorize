@@ -1,0 +1,6 @@
+meta:
+  resource: item
+
+rules:
+  query: this.creator is user.id
+  create: user.id == @creator

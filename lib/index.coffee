@@ -7,7 +7,7 @@ mongoose = require 'mongoose'
 logger = require('log4js').getLogger('index')
 logger.setLevel global.logLevel
 
-
+Parser = require './parser.coffee'
 errors = require './errors.coffee'
 
 class Authorizr
@@ -29,35 +29,21 @@ class Authorizr
     return rule
 
   constructor: (config)->
+    @parser = new Parser
     @rules = {}
     @rulesRoot = config?.rulesRoot
     @readDir() if @rulesRoot
 
   readYaml: (path)->
     fullPath = @rulesRoot + '/' + path
-    yaml.safeLoad fs.readFileSync(fullPath, 'utf8')
+    @parser.parseFile fullPath
 
   applyRules: (content)->
-    name = content?.meta?.resource
-    throw new errors.InvalidFileError path, 'missing meta.resource' unless name?
-
-    language = content.meta.language or 'coffee'
-
-    rules = content.rules
-
-    unless language is 'javascript'
-      compiler =  require "./compilers/#{language}.coffee"
-      throw new errors.InvalidFileError path, "invalid meta.language (#{ language })" unless compiler?
-      rules = compiler.compile rules
-
-    #logger.debug 'rules', rules
-    @rules[name] = _.extend {}, @rules[name], rules
-
+    @parser.parseRule content
 
   readDir: ->
     files = fs.readdirSync @rulesRoot
     @applyRules @readYaml file for file in files
-
 
 
   makeQuery: (resource, context)->
@@ -66,7 +52,8 @@ class Authorizr
     Model.find condition
 
   query: (resource, context)->
-    rule = @rules[resource]['query']
+    rule = @parser.parsed[resource]['query']
+
 
     #console.log 'rule', "[" + rule + "]"
 

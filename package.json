@@ -4,7 +4,8 @@
   "description": "Rules base authorization with mongoose and express",
   "main": "index.js",
   "scripts": {
-    "test": "sh run_tests.sh"
+    "test": "sh run_tests.sh",
+    "test-watch": "sh run_tests-watch.sh"
   },
   "repository": {
     "type": "git",

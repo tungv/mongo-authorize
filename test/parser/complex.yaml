@@ -1,0 +1,23 @@
+meta:
+  resource: item
+
+rules:
+  query:
+    either:
+      - this.creator is user.id
+      - user.role is 'admin'
+      - this.creator is 'guest'
+
+  create:
+    - this.creator is user.id
+    - this.value <= user.balance - 100
+    - either:
+      - this.name is "Item by " + user.username
+      - all:
+        - user.role is 'admin'
+        - this.name is "Superior item by " + user.username
+
+  delete:
+    either:
+      - this.creator is user.id
+      - user.role is 'admin'
