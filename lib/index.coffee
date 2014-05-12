@@ -73,9 +73,9 @@ class Authorizr
     rule = replace rule, context
     return Model.find() unless rule
 
-    console.log 'rule', "[" + rule + "]"
+    #console.log 'rule', "[" + rule + "]"
 
-    optimized = @optimize rule
+    #optimized = @optimize rule
 
     console.log 'optimized', "[" + JSON.stringify(optimized) + "]"
 
@@ -120,7 +120,7 @@ class Authorizr
           isTrue = eval rule.substr 7
           return {$where: 'return ' + if isTrue then 'true;' else 'false;'}
         catch ex
-          console.warn 'ex', ex
+          #console.warn 'ex', ex
 
     else
       #console.log 'not matched', matched
