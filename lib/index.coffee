@@ -75,9 +75,9 @@ class Authorizr
 
     #console.log 'rule', "[" + rule + "]"
 
-    #optimized = @optimize rule
+    optimized = @optimize rule
 
-    console.log 'optimized', "[" + JSON.stringify(optimized) + "]"
+    #console.log 'optimized', "[" + JSON.stringify(optimized) + "]"
 
     return optimized
 
