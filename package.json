@@ -1,6 +1,6 @@
 {
-  "name": "mongo-authorize",
-  "version": "0.0.0",
+  "name": "flex-authorizor",
+  "version": "0.1.0",
   "description": "Rules base authorization with mongoose and express",
   "main": "index.js",
   "scripts": {
