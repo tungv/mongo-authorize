@@ -14,8 +14,16 @@ module.exports = class Parser
   isAlwaysFalse = (rule)->
     rule is false or rule.$where is false or rule.$all?.length == 0
 
-  replacer = (jsCode, context)->
+  @replacer = replacer = (jsCode, context)->
+    logger = log4js.getLogger 'replacer'
+    logger.setLevel 'ERROR'
+
+    logger.debug 'jsCode', jsCode
+
+    ## match pattern with user.*
     matched = jsCode.match /(?=(^|\s*))(user\.\w+(\.\w*)*)/g
+    logger.debug 'matched', matched
+
     matched?.forEach (match)->
       getter = new Function ['context'], "return context.#{match}"
       try
@@ -25,11 +33,15 @@ module.exports = class Parser
 
       jsCode = jsCode.split(match).join(JSON.stringify(value))
 
+    logger.debug 'after getter', jsCode
+
     unless jsCode.match /[ \(\[\=\>\<]this\./
       try
         fn = new Function [], jsCode
         jsCode = fn()
+        logger.debug 'after eval\'ed', jsCode
       catch ex
+        logger.error 'cannot eval js script', jsCode
 
     return jsCode
 
@@ -61,16 +73,15 @@ module.exports = class Parser
     }
 
     rulesObj = resourceObj.rules[name] or []
-    #console.log 'rules', rules
 
     optimizer = Optimizer.create language
 
-    @recursiveNormalize rules, optimizer, rulesObj
+    @_recursiveNormalize rules, optimizer, rulesObj
 
     resourceObj.rules[name] = rulesObj
     @parsed[resource] = resourceObj
 
-  recursiveNormalize: (rules, optimizer, rulesObj, level=1)->
+  _recursiveNormalize: (rules, optimizer, rulesObj, level=1)->
     #console.log 'level', ++level
     #padding = (new Array ++level).join('==') + ' '
 
@@ -79,19 +90,19 @@ module.exports = class Parser
       $or = []
       rulesObj.push {$or}
       for rule in rules.either
-        @recursiveNormalize rule, optimizer, $or, level
+        @_recursiveNormalize rule, optimizer, $or, level
 
     if _.isArray rules.all
       #console.log(padding + 'and', arguments[0], arguments[2])
       $and = []
       rulesObj.push {$and}
       for rule in rules.all
-        @recursiveNormalize rule, optimizer, $and, level
+        @_recursiveNormalize rule, optimizer, $and, level
 
     else if _.isArray rules
       #console.log(padding + 'array', arguments[0], arguments[2])
       for rule in rules
-        @recursiveNormalize rule, optimizer, rulesObj, level
+        @_recursiveNormalize rule, optimizer, rulesObj, level
 
     else if _.isString rules
       #console.log(padding + 'string', arguments[0], arguments[2])
@@ -106,7 +117,7 @@ module.exports = class Parser
     root = {$and: cloned}
 
     #for rule, index in cloned
-    @recursiveApplyContext root, '$and', cloned, context, '$and'
+    @_recursiveApplyContext root, '$and', cloned, context, '$and'
 
     if root.$and?.length == 1
       return root.$and[0]
@@ -114,7 +125,7 @@ module.exports = class Parser
     return root
 
 
-  recursiveApplyContext: (root, property, value, context, parentLogic='$and')->
+  _recursiveApplyContext: (root, property, value, context, parentLogic='$and')->
     logger = log4js.getLogger 'r-applyContext'
     logger.setLevel 'ERROR'
 
@@ -131,7 +142,7 @@ module.exports = class Parser
       logger.debug "#{logic} array"
 
       for subValue, index in value
-        @recursiveApplyContext value, index, subValue, context, parentLogic
+        @_recursiveApplyContext value, index, subValue, context, parentLogic
 
       ## handle always-true-$or and always-false-$and
       if logic is '$or'
@@ -181,4 +192,4 @@ module.exports = class Parser
     else
       ## inside a mongodb operator ($gle, $not...)
       for key, subValue of value
-        @recursiveApplyContext value, key, subValue, context, key
+        @_recursiveApplyContext value, key, subValue, context, key
