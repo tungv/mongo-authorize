@@ -2,8 +2,37 @@ yaml = require 'js-yaml'
 fs = require 'fs'
 errors = require './errors.coffee'
 _ = require 'lodash'
+Optimizer = require './optimizers/index.coffee'
+
+log4js = require 'log4js'
 
 module.exports = class Parser
+
+  isAlwaysTrue = (rule)->
+    rule is true or rule.$where is true
+
+  isAlwaysFalse = (rule)->
+    rule is false or rule.$where is false or rule.$all?.length == 0
+
+  replacer = (jsCode, context)->
+    matched = jsCode.match /(?=(^|\s*))(user\.\w+(\.\w*)*)/g
+    matched?.forEach (match)->
+      getter = new Function ['context'], "return context.#{match}"
+      try
+        value = getter(context)
+      catch
+        value = 'undefined'
+
+      jsCode = jsCode.split(match).join(JSON.stringify(value))
+
+    unless jsCode.match /[ \(\[\=\>\<]this\./
+      try
+        fn = new Function [], jsCode
+        jsCode = fn()
+      catch ex
+
+    return jsCode
+
   constructor: (@parsed = {})->
 
   parseFile: (filePath)->
@@ -22,6 +51,7 @@ module.exports = class Parser
 
     #console.log "@parsed[#{resource}].rules", @parsed[resource].rules
     return @parsed[resource]
+
 
   normalizeRule: (resource, language, name, rules)->
     resourceObj = @parsed[resource] or {
@@ -42,8 +72,7 @@ module.exports = class Parser
 
   recursiveNormalize: (rules, optimizer, rulesObj, level=1)->
     #console.log 'level', ++level
-    padding = (new Array ++level).join('==') + ' '
-
+    #padding = (new Array ++level).join('==') + ' '
 
     if _.isArray rules.either
       #console.log(padding + 'either', arguments[0], arguments[2])
@@ -68,94 +97,88 @@ module.exports = class Parser
       #console.log(padding + 'string', arguments[0], arguments[2])
       rulesObj.push optimizer.optimize rules
 
-  applyContext: (context, rules=[])->
+  applyContext: (resource, action, context)->
+    root = _.cloneDeep @parsed[resource]?.rules
+    cloned = root?[action]
+
+    return unless cloned
+
+    root = {$and: cloned}
+
+    #for rule, index in cloned
+    @recursiveApplyContext root, '$and', cloned, context, '$and'
+
+    if root.$and?.length == 1
+      return root.$and[0]
+
+    return root
 
 
-class Optimizer
-  @create: (language)->
-    switch language
-      when 'coffee' then return new @CoffeeScript()
+  recursiveApplyContext: (root, property, value, context, parentLogic='$and')->
+    logger = log4js.getLogger 'r-applyContext'
+    logger.setLevel 'ERROR'
 
-  @getter: (jsCode)->
-    ## if it has this, skip eval'ing
-    if jsCode.match /this/ then return jsCode
+    if typeof value is 'string'
+      logger.debug 'string', property, ':', value
+      #console.log 'root[property]', property, root[property]
+      root[property] = replacer value, context
+      #logger.debug 'parentLogic', parentLogic
 
-    try
-      fn = new Function [], jsCode
-      return fn()
-    catch ex
-      return jsCode
+    else if _.isArray value
+      ## inside an $or or $and
+      logic = parentLogic
 
+      logger.debug "#{logic} array"
 
+      for subValue, index in value
+        @recursiveApplyContext value, index, subValue, context, parentLogic
 
-class Optimizer.CoffeeScript extends Optimizer
-  coffee = require 'coffee-script'
+      ## handle always-true-$or and always-false-$and
+      if logic is '$or'
+        ## in case of $or, if one of the rules is true then $or will always be true
 
-  parse = (coffeeCode)->
-    try
-      jsCode = coffee.compile 'return ' + coffeeCode, {bare:true}
-      return jsCode.split('\n').join('')
-    catch ex
-      console.error ex, coffeeCode
-      throw new Error 'syntax error: cannot parse coffee-script'
+        ## testing for always-true
+        alwaysTrue = value.some isAlwaysTrue
+        if alwaysTrue
+          logger.debug 'always true', value
+          delete root[property]
+          return
 
-  optimize: (rule)->
-    log = off
-    #console.log 'OPTIMIZE', rule
-    matched = rule.match /^\s*([^=]+)(\s?==\s?|\sis\s|\s?<=?\s?|\s?>=?\s?)([^;]+)\s*(;\n*)?$/
-    #console.log 'matched', matched
-
-    thisPattern = /^(this\.|@\.?)(.+)$/
-    ## 0. whole string
-    ## 1. this. or @
-    ## 2. path
+        ## remove always-false rules
+        value = _.reject value, isAlwaysFalse
 
 
-    if matched and matched[1] and matched[2] and matched[3]
-      #console.log 'matched',  matched[1], matched[2]
-      leftSide = matched[1].trim()
-      rightSide = matched[3].trim()
-      operator = matched[2].trim()
-      [hasThis, theOther, swap] = if leftSide.match thisPattern
-      then [leftSide, rightSide, false]
-      else [rightSide, leftSide, true]
+      if logic is '$and'
+        logger.debug 'value', value
+        logger.debug 'root', root
+        logger.debug 'property', property
 
-      theOtherCorrect = !theOther.match thisPattern
-      hasThisCorrect = !!hasThis.match thisPattern
+        ## testing for an always-false
+        alwaysFalse = value.some isAlwaysFalse
+        if (alwaysFalse)
+          delete root[property]
+          root.$all = []
+          return
 
-
-      log and console.log 'hasThis', hasThis, 'correct?', hasThisCorrect
-      log and console.log 'theOther', theOther, 'correct?', theOtherCorrect
-      log and console.log 'operator', operator, 'swap', swap
-
-      ## `has this` part must have 'this.' and `the other` must not have 'this.'
-      if theOtherCorrect and hasThisCorrect
-        path = hasThis.replace thisPattern, ()-> arguments[2]
-        #console.log 'this path', path
-        obj = {}
-        try
-          value = Optimizer.getter parse theOther
-          switch operator
-            when 'is', '==' then obj[path] = value
-            when 'isnt', '!=' then obj[path] = $not:value
-            when '<='
-              obj[path] = if swap then $gte:value else $lte:value
-            when '>='
-              obj[path] = if swap then $lte:value else $gte:value
-            when '<'
-              obj[path] = if swap then $gt:value else $lt:value
-            when '>'
-              obj[path] = if swap then $lt:value else $gt:value
-
-        catch ex
-          console.error 'ex', ex
+        ## remove always-true rules
+        value = _.reject value, isAlwaysTrue
 
 
-        return obj
+      logger.debug "#{logic} array end"
 
+      if value.length > 1
+        root[property] = value
+      else if value.length == 1
+        logger.debug 'array.length == 1'
+        logger.debug '  logic', logic
+        logger.debug '  property', property
+        logger.debug '  value[0]', value[0]
+        delete root[property]
+        _.extend root, value[0]
+      else
+        delete root[property]
 
     else
-      console.log 'not matched', matched
-
-
-    return {$where: Optimizer.getter parse rule}
+      ## inside a mongodb operator ($gle, $not...)
+      for key, subValue of value
+        @recursiveApplyContext value, key, subValue, context, key
