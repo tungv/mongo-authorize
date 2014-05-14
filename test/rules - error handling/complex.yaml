@@ -1,4 +1,0 @@
-meta:
-  resource: item
-rules:
-  query: user.names.first is 'tung'
