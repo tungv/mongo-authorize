@@ -8,11 +8,8 @@ log4js = require 'log4js'
 
 module.exports = class Parser
 
-  isAlwaysTrue = (rule)->
-    rule is true or rule.$where is true
-
-  isAlwaysFalse = (rule)->
-    rule is false or rule.$where is false or rule.$all?.length == 0
+  isAlwaysTrue = (rule)-> rule is true or rule.$where is true
+  isAlwaysFalse = (rule)-> rule is false or rule.$where is false or rule.$all?.length == 0
 
   @replacer = replacer = (jsCode, context)->
     logger = log4js.getLogger 'replacer'
@@ -66,11 +63,11 @@ module.exports = class Parser
 
 
   normalizeRule: (resource, language, name, rules)->
-    resourceObj = @parsed[resource] or {
+    resourceObj = @parsed[resource] or
       meta:
         resource: resource
       rules: {}
-    }
+
 
     rulesObj = resourceObj.rules[name] or []
 
@@ -82,9 +79,6 @@ module.exports = class Parser
     @parsed[resource] = resourceObj
 
   _recursiveNormalize: (rules, optimizer, rulesObj, level=1)->
-    #console.log 'level', ++level
-    #padding = (new Array ++level).join('==') + ' '
-
     if _.isArray rules.either
       #console.log(padding + 'either', arguments[0], arguments[2])
       $or = []
@@ -193,3 +187,14 @@ module.exports = class Parser
       ## inside a mongodb operator ($gle, $not...)
       for key, subValue of value
         @_recursiveApplyContext value, key, subValue, context, key
+
+  createAllowed: (resource, model, context)->
+    logger = log4js.getLogger 'createAllowed'
+    logger.setLevel 'ALL'
+
+    rules = @applyContext resource, 'create', context
+    logger.debug 'rules', rules
+
+  validateModel: (model, rules)->
+    
+
