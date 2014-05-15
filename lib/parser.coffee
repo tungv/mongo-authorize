@@ -6,6 +6,8 @@ Optimizer = require './optimizers/index.coffee'
 
 log4js = require 'log4js'
 
+query = require 'js-mongo-query'
+
 module.exports = class Parser
 
   isAlwaysTrue = (rule)-> rule is true or rule.$where is true
@@ -193,8 +195,10 @@ module.exports = class Parser
     logger.setLevel 'ALL'
 
     rules = @applyContext resource, 'create', context
-    logger.debug 'rules', rules
+    #logger.debug 'rules', rules
+    @validateModel model, rules
 
   validateModel: (model, rules)->
-    
+    logger = log4js.getLogger 'validateModel'
+    return query model, rules
 

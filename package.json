@@ -4,8 +4,8 @@
   "description": "Rules base authorization with mongoose and express",
   "main": "index.js",
   "scripts": {
-    "test": "sh run_tests.sh",
-    "test-watch": "sh run_tests-watch.sh"
+    "test": "sh scripts/run_tests.sh",
+    "test-watch": "sh scripts/run_tests-watch.sh"
   },
   "repository": {
     "type": "git",
@@ -24,15 +24,13 @@
   },
   "homepage": "https://github.com/gmanvn/mongo-authorize",
   "dependencies": {
-    "bson": "^0.2.7",
     "coffee-script": "^1.7.1",
     "lodash": "^2.4.1",
     "log4js": "^0.6.14",
-    "mongoose": "^3.8.8"
+    "js-yaml": "latest",
+    "js-mongo-query": "latest"
   },
   "devDependencies": {
-    "config": "^0.4.35",
-    "js-yaml": "^3.0.2",
     "chai": "^1.9.1"
   }
 }

@@ -1,6 +1,9 @@
 Parser = require '../lib/parser.coffee'
 should = require('chai').should()
 
+log4js = require 'log4js'
+logger = log4js.getLogger 'test/create'
+
 describe 'Parser', ->
 
   describe '#createAllowed()', ->
@@ -29,3 +32,4 @@ describe 'Parser', ->
       parser.parseRule makeData rules
 
       parser.createAllowed('item', item, context).should.be.true
+
