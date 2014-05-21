@@ -104,3 +104,9 @@ describe 'Parser', ->
         id: '123'
       }
 
+    it "should handle shortcut false rule", ->
+      parser = new Parser
+      parser.parseRule makeData query:false
+      parser.applyContext('item', 'query', context).should.eql {$all:[]}
+
+

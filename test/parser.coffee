@@ -221,4 +221,17 @@ describe 'Parser', ->
           ]
       }
 
+    it 'should parse shortcut false rule', ()->
+      parser = new Parser
+      parsed = parser.parseRule makeData query:false
+
+      parsed.rules.query.should.eql [false]
+
+    it 'should parse shortcut true rule', ()->
+      parser = new Parser
+      parsed = parser.parseRule makeData query:true
+
+      parsed.rules.query.should.eql [true]
+
+
 
