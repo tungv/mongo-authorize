@@ -75,12 +75,15 @@ module.exports = class Parser
 
     optimizer = Optimizer.create language
 
+    #console.log 'rules', typeof rules, rules
+
     @_recursiveNormalize rules, optimizer, rulesObj
 
     resourceObj.rules[name] = rulesObj
     @parsed[resource] = resourceObj
 
   _recursiveNormalize: (rules, optimizer, rulesObj, level=1)->
+    #padding = ''
     if _.isArray rules.either
       #console.log(padding + 'either', arguments[0], arguments[2])
       $or = []
@@ -104,19 +107,33 @@ module.exports = class Parser
       #console.log(padding + 'string', arguments[0], arguments[2])
       rulesObj.push optimizer.optimize rules
 
+    else if rules is true or rules is false
+      #console.log(padding + 'boolean', arguments[0], arguments[2])
+      rulesObj.push rules
+
   applyContext: (resource, action, context)->
+    logger = log4js.getLogger 'applyContext'
+    logger.setLevel 'ERROR'
+
+    logger.trace 'resource', resource
+    logger.trace 'action', action
+    logger.trace 'context', context
+
     root = _.cloneDeep @parsed[resource]?.rules
     cloned = root?[action]
 
     return unless cloned
 
     root = {$and: cloned}
+    logger.trace 'before root', root
 
     #for rule, index in cloned
     @_recursiveApplyContext root, '$and', cloned, context, '$and'
 
     if root.$and?.length == 1
       return root.$and[0]
+
+    logger.trace 'after root', root
 
     return root
 
@@ -190,13 +207,20 @@ module.exports = class Parser
       for key, subValue of value
         @_recursiveApplyContext value, key, subValue, context, key
 
-  createAllowed: (resource, model, context)->
-    logger = log4js.getLogger 'createAllowed'
-    logger.setLevel 'ALL'
+  isAllowed: (resource, ruleName, model, context)->
+    logger = log4js.getLogger 'isAllowed'
+    logger.setLevel 'ERROR'
 
-    rules = @applyContext resource, 'create', context
-    #logger.debug 'rules', rules
+    logger.trace 'resource', resource
+    logger.trace 'ruleName', ruleName
+    logger.trace 'context', context
+
+    rules = @applyContext resource, ruleName, context
+    logger.debug 'rules', rules
     @validateModel model, rules
+
+  createAllowed: (resource, model, context)->
+    @isAllowed resource, 'create', model, context
 
   validateModel: (model, rules)->
     logger = log4js.getLogger 'validateModel'
