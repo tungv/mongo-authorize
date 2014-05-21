@@ -55,7 +55,7 @@ class Optimizer.CoffeeScript extends Optimizer
   optimize: (rule)->
     log = off
     #console.log 'OPTIMIZE', rule
-    matched = rule.match /^\s*([^=]+)\s?(==|!=|\sis\s|\sisnt\s|<=?|>=?)([^;]+)\s*(;\n*)?$/
+    matched = rule.match /^\s*([^=]+)\s?(==|!=|\sis\s|\sisnt\s|\sin\s|<=?|>=?)([^;]+)\s*(;\n*)?$/
     #console.log 'matched', matched
 
     thisPattern = /^(this\.|@\.?)(.+)$/
@@ -99,6 +99,13 @@ class Optimizer.CoffeeScript extends Optimizer
               obj[path] = if swap then $gt:value else $lt:value
             when '>'
               obj[path] = if swap then $lt:value else $gt:value
+            when 'in'
+              if !swap
+                ## this.value in array
+                obj[path] = $in:value
+              else
+                ## value in this.array
+                obj[path] = value
 
         catch ex
           console.error 'ex', ex
