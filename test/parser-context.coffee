@@ -109,4 +109,14 @@ describe 'Parser', ->
       parser.parseRule makeData query:false
       parser.applyContext('item', 'query', context).should.eql {$all:[]}
 
+    it "should handle all false in $or", ->
+      parser = new Parser
+      parser.parseRule makeData
+        query: [
+          '1 is 2'
+          '2 is 3'
+          '3 is 1'
+        ]
+      parser.applyContext('item', 'query', context).should.eql {$all:[]}
+
 

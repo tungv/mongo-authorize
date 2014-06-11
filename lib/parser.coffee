@@ -21,26 +21,28 @@ module.exports = class Parser
 
     ## match pattern with user.*
     matched = jsCode.match /(?=(^|\s*))(user\.\w+(\.\w*)*)/g
-    logger.debug 'matched', matched
+    logger.debug '  matched', matched
 
     matched?.forEach (match)->
       getter = new Function ['context'], "return context.#{match}"
       try
-        value = getter(context)
+        value = JSON.stringify getter(context)
       catch
         value = 'undefined'
 
-      jsCode = jsCode.split(match).join(JSON.stringify(value))
+      logger.debug '    match', match, 'value', value
+      jsCode = jsCode.split(match).join value or 'undefined'
 
-    logger.debug 'after getter', jsCode
+    logger.debug '  after getter', jsCode
 
     unless jsCode.match /[ \(\[\=\>\<]this\./
       try
+        original = jsCode
         fn = new Function [], jsCode
         jsCode = fn()
         logger.debug 'after eval\'ed', jsCode
       catch ex
-        logger.error 'cannot eval js script', jsCode
+        logger.warn 'cannot eval js script', jsCode, 'original', original
 
     return jsCode
 
@@ -170,6 +172,7 @@ module.exports = class Parser
 
         ## remove always-false rules
         value = _.reject value, isAlwaysFalse
+        value = [$all:[]] if value.length is 0
 
 
       if logic is '$and'
@@ -186,7 +189,6 @@ module.exports = class Parser
 
         ## remove always-true rules
         value = _.reject value, isAlwaysTrue
-
 
       logger.debug "#{logic} array end"
 
