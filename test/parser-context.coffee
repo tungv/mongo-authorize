@@ -57,7 +57,7 @@ describe 'Parser', ->
           'this.id is user.id'
         ]
 
-      parser.applyContext('item', 'query', context).should.eql {$all:[]}
+      parser.applyContext('item', 'query', context).should.eql {_id: $all:[]}
 
     it 'should handle always true in $or rule', ->
       parser = new Parser
@@ -107,7 +107,7 @@ describe 'Parser', ->
     it "should handle shortcut false rule", ->
       parser = new Parser
       parser.parseRule makeData query:false
-      parser.applyContext('item', 'query', context).should.eql {$all:[]}
+      parser.applyContext('item', 'query', context).should.eql {_id: $all:[]}
 
     it "should handle all false in $or", ->
       parser = new Parser
@@ -117,6 +117,6 @@ describe 'Parser', ->
           '2 is 3'
           '3 is 1'
         ]
-      parser.applyContext('item', 'query', context).should.eql {$all:[]}
+      parser.applyContext('item', 'query', context).should.eql {_id: $all:[]}
 
 

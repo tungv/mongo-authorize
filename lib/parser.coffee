@@ -11,7 +11,7 @@ query = require 'js-mongo-query'
 module.exports = class Parser
 
   isAlwaysTrue = (rule)-> rule is true or rule.$where is true
-  isAlwaysFalse = (rule)-> rule is false or rule.$where is false or rule.$all?.length == 0
+  isAlwaysFalse = (rule)-> rule is false or rule.$where is false or rule._id?.$all?.length == 0
 
   @replacer = replacer = (jsCode, context)->
     logger = log4js.getLogger 'replacer'
@@ -172,7 +172,7 @@ module.exports = class Parser
 
         ## remove always-false rules
         value = _.reject value, isAlwaysFalse
-        value = [$all:[]] if value.length is 0
+        value = [_id:$all:[]] if value.length is 0
 
 
       if logic is '$and'
@@ -184,7 +184,7 @@ module.exports = class Parser
         alwaysFalse = value.some isAlwaysFalse
         if (alwaysFalse)
           delete root[property]
-          root.$all = []
+          root._id= $all:[]
           return
 
         ## remove always-true rules
